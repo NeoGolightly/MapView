@@ -2,14 +2,21 @@ import SwiftUI
 import MapKit
 import CoreLocation
 import Combine
+import Logging
 
 open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
   public let id: String
   public var coordinate: CLLocationCoordinate2D
+  public var title: String?
+  public var subtitle: String?
   public init(id: String = UUID().uuidString,
-              coordinate: CLLocationCoordinate2D) {
+              coordinate: CLLocationCoordinate2D,
+              title: String? = nil,
+              subtitle: String? = nil) {
     self.id = id
     self.coordinate = coordinate
+    self.title = title
+    self.subtitle = subtitle
   }
 }
 
@@ -23,33 +30,37 @@ open class MapViewOverlay: Identifiable{
   }
 }
 
+var logger = Logger(label: "MapView")
 
 public struct MapView: UIViewRepresentable
 {
   public typealias UIViewType = MKMapView
-  @ObservedObject public var mapService: MapService
+  //FIXME: mapService not deinit
+  var mapViewService: MapViewService
   
-  public init(mapService: ObservedObject<MapService>) {
-    self._mapService = mapService
-//    print("MapView init")
+  public init(mapService: MapViewService) {
+    self.mapViewService = mapService
+    
+    logger.logLevel = .trace
+    logger.trace("init")
   }
   
   public func makeUIView(context: Context) -> MKMapView {
     let mapView = MKMapView(frame: UIScreen.main.bounds)
-    mapService.setMapView(mapView: mapView)
+    mapViewService.setMapView(mapView: mapView)
     mapView.delegate = context.coordinator
     configureMapView(mapView: mapView)
-    print("makeMapView")
+    logger.trace("makeUIView")
     return mapView
   }
   
   private func configureMapView(mapView: MKMapView){
-    mapView.setRegion(mapService.coordinateRegion, animated: true)
-    mapView.showsUserLocation = mapService.showsUserLocation
-    mapView.setUserTrackingMode(mapService.userTrackingMode, animated: true)
-    mapView.isPitchEnabled = mapService.isPitchEnabled
+    mapView.setRegion(mapViewService.coordinateRegion, animated: true)
+    mapView.showsUserLocation = mapViewService.showsUserLocation
+    mapView.setUserTrackingMode(mapViewService.userTrackingMode, animated: true)
+    mapView.isPitchEnabled = mapViewService.isPitchEnabled
     mapView.pointOfInterestFilter = MKPointOfInterestFilter(including: [])
-    if mapService.showsUserLocation {
+    if mapViewService.showsUserLocation {
       let userButton = MKUserTrackingButton(mapView: mapView)
       mapView.addSubview(userButton)
     }
@@ -59,7 +70,7 @@ public struct MapView: UIViewRepresentable
     view.removeAnnotations(view.annotations)
     view.removeOverlays(view.overlays)
     view.delegate = nil
-    print("dismantleMapView")
+    logger.trace("dismantle")
   }
   
   
@@ -68,7 +79,7 @@ public struct MapView: UIViewRepresentable
   }
   
   public func makeCoordinator() -> MapViewCoodinator {
-    print("Coordinator")
+    logger.trace("makeCoordinator")
     return MapViewCoodinator(self)
   }
   
@@ -81,33 +92,41 @@ public struct MapView: UIViewRepresentable
     }
     
     public func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
-      parent.mapService.heading = mapView.camera.heading
-      parent.mapService.coordinateRegion = mapView.region
-      parent.mapService.mapViewDidChangeVisibleRegion?(mapView)
+      parent.mapViewService.heading = mapView.camera.heading
+      parent.mapViewService.coordinateRegion = mapView.region
+      parent.mapViewService.centerAltitude = mapView.camera.altitude
+      parent.mapViewService.mapViewDidChangeVisibleRegion?(mapView)
     }
     
     
     public func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool){
-      parent.mapService.mapIsUpdating = true
+      parent.mapViewService.mapIsUpdating = true
     }
     
     
     public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool){
-      parent.mapService.mapIsUpdating = false
+      parent.mapViewService.mapIsUpdating = false
     }
     
     public func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-      parent.mapService.mapViewDidUpdateUserLocation?(mapView, userLocation)
+      parent.mapViewService.mapViewDidUpdateUserLocation?(mapView, userLocation)
     }
     
     public func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-      parent.mapService.mapViewRendererForOverlay?(mapView, overlay) ?? MKOverlayRenderer()
+      parent.mapViewService.mapViewRendererForOverlay?(mapView, overlay) ?? MKOverlayRenderer()
     }
     
     public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-      return parent.mapService.mapViewViewForAnnotation?(mapView, annotation)
+      parent.mapViewService.mapViewViewForAnnotation?(mapView, annotation)
     }
     
+    public func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+      parent.mapViewService.mapViewDidSelectView?(mapView, view)
+    }
+    
+    public func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
+      parent.mapViewService.mapViewDidDeselectView?(mapView, view)
+    }
     
     public func mapView(_ mapView: MKMapView, didAdd views: [MKAnnotationView]) {
 //      let view = mapView.view(for: mapView.userLocation)
