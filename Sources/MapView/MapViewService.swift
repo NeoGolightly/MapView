@@ -10,6 +10,33 @@ import Combine
 import CoreLocation
 import Logging
 
+
+open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
+  public let id: String
+  public var coordinate: CLLocationCoordinate2D
+  public var title: String?
+  public var subtitle: String?
+  public init(id: String = UUID().uuidString,
+              coordinate: CLLocationCoordinate2D,
+              title: String? = nil,
+              subtitle: String? = nil) {
+    self.id = id
+    self.coordinate = coordinate
+    self.title = title
+    self.subtitle = subtitle
+  }
+}
+
+open class MapViewOverlay: Identifiable{
+  public let id: String
+  public var overlay: MKOverlay
+  public init(id: String = UUID().uuidString,
+              overlay: MKOverlay) {
+    self.id = id
+    self.overlay = overlay
+  }
+}
+
 public final class MapViewService: ObservableObject{
   //
   public typealias ViewForAnnotation = (MKMapView, MKAnnotation) -> MKAnnotationView?
@@ -17,6 +44,8 @@ public final class MapViewService: ObservableObject{
   public typealias RendererForOverlay = (MKMapView, MKOverlay) -> MKOverlayRenderer
   public typealias DidSelectView = (MKMapView, MKAnnotationView) -> ()
   public typealias DidDeselectView = (MKMapView, MKAnnotationView) -> ()
+  public typealias DidSelectPolyline = (MKMapView, MKPolylineRenderer) -> ()
+  public typealias DidDeselectPolyline = (MKMapView, MKPolylineRenderer) -> ()
   //
   @Published public var showsUserLocation = false
   @Published public var userTrackingMode: MKUserTrackingMode = .none
@@ -32,6 +61,8 @@ public final class MapViewService: ObservableObject{
   internal var mapViewRendererForOverlay: RendererForOverlay?
   internal var mapViewDidSelectView: DidSelectView?
   internal var mapViewDidDeselectView: DidDeselectView?
+  internal var mapViewDidSelectPolyline: DidSelectPolyline?
+  internal var mapViewDidDeselectPolyline: DidDeselectPolyline?
   internal var mapIsUpdating = false
   //
   private var lastCoordinateRegion: MKCoordinateRegion = MKCoordinateRegion()
@@ -43,7 +74,6 @@ public final class MapViewService: ObservableObject{
   
   public init() {
     tapGestureRecognizer = UITapGestureRecognizer()
-
     setBindings()
   }
   
@@ -56,7 +86,6 @@ public final class MapViewService: ObservableObject{
   
   @objc
   internal func handleTap(gr: UITapGestureRecognizer) {
-    
     if gr.state == .ended {
       let point = gr.location(ofTouch: 0, in: mapView)
       guard let mapView = mapView else { return }
@@ -67,11 +96,10 @@ public final class MapViewService: ObservableObject{
           if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
             let polylineViewPoint = renderer.point(for: mapPoint)
             if renderer.path.boundingBoxOfPath.contains(polylineViewPoint){
-              print("It's a path!!")
-              renderer.strokeColor = .init(red: 1, green: 0, blue: 0, alpha: 0.4)
+              mapViewDidSelectPolyline?(mapView, renderer)
             }
             else {
-              renderer.strokeColor = .init(red: 0, green: 1, blue: 0, alpha: 0.4)
+              mapViewDidDeselectPolyline?(mapView, renderer)
             }
           }
         }
@@ -98,24 +126,32 @@ public final class MapViewService: ObservableObject{
     mapView?.gestureRecognizers?.forEach{ mapView?.removeGestureRecognizer($0)}
   }
   
-  public func setViewForAnnotation(setup: @escaping ViewForAnnotation){
-    mapViewViewForAnnotation = setup
+  public func setViewForAnnotation(callback: @escaping ViewForAnnotation){
+    mapViewViewForAnnotation = callback
   }
   
-  public func mapViewDidChangeVisibleRegion(setup: @escaping ViewDidChangeVisibleRegion) {
-    mapViewDidChangeVisibleRegion = setup
+  public func mapViewDidChangeVisibleRegion(callback: @escaping ViewDidChangeVisibleRegion) {
+    mapViewDidChangeVisibleRegion = callback
   }
   
-  public func mapViewRendererForOverlay(setup: @escaping RendererForOverlay) {
-    mapViewRendererForOverlay = setup
+  public func mapViewRendererForOverlay(callback: @escaping RendererForOverlay) {
+    mapViewRendererForOverlay = callback
   }
   
-  public func mapViewDidSelectView(setup: @escaping DidSelectView) {
-    mapViewDidSelectView = setup
+  public func mapViewDidSelectView(callback: @escaping DidSelectView) {
+    mapViewDidSelectView = callback
   }
   
-  public func mapViewDidDeselectView(setup: @escaping DidDeselectView) {
-    mapViewDidDeselectView = setup
+  public func mapViewDidDeselectView(callback: @escaping DidDeselectView) {
+    mapViewDidDeselectView = callback
+  }
+  
+  public func mapViewDidSelectPolyline(callback: @escaping DidSelectPolyline) {
+    mapViewDidSelectPolyline = callback
+  }
+  
+  public func mapViewDidDeselectPolyline(callback: @escaping DidDeselectPolyline) {
+    mapViewDidDeselectPolyline = callback
   }
   
   private func setBindings() {
@@ -132,6 +168,7 @@ public final class MapViewService: ObservableObject{
     }.store(in: &subscriptions)
     
     _coordinateRegion.projectedValue.sink { [weak self] region in
+      print("new region")
       guard self?.mapIsUpdating == false else { return }
       if region != self?.lastCoordinateRegion {
         self?.mapView?.setRegion(region, animated: true)

@@ -4,31 +4,12 @@ import CoreLocation
 import Combine
 import Logging
 
-open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
-  public let id: String
-  public var coordinate: CLLocationCoordinate2D
-  public var title: String?
-  public var subtitle: String?
-  public init(id: String = UUID().uuidString,
-              coordinate: CLLocationCoordinate2D,
-              title: String? = nil,
-              subtitle: String? = nil) {
-    self.id = id
-    self.coordinate = coordinate
-    self.title = title
-    self.subtitle = subtitle
-  }
-}
-
-open class MapViewOverlay: Identifiable{
-  public let id: String
-  public var overlay: MKOverlay
-  public init(id: String = UUID().uuidString,
-              overlay: MKOverlay) {
-    self.id = id
-    self.overlay = overlay
-  }
-}
+//extension MapView{
+//  public func renderOverlay(callback: @escaping (MKMapView, MKOverlay) -> MKOverlayRenderer) -> MapView {
+//    self.mapViewService.mapViewRendererForOverlay = callback
+//    return self
+//  }
+//}
 
 var logger = Logger(label: "MapView")
 
@@ -36,7 +17,7 @@ public struct MapView: UIViewRepresentable
 {
   public typealias UIViewType = MKMapView
   //FIXME: mapService not deinit
-  var mapViewService: MapViewService
+  let mapViewService: MapViewService
   
   public init(mapService: MapViewService) {
     self.mapViewService = mapService
