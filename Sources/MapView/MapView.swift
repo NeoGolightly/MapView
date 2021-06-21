@@ -17,8 +17,7 @@ public struct MapView: UIViewRepresentable
 {
   public typealias UIViewType = MKMapView
   //FIXME: mapService not deinit
-  let mapViewService: MapViewService
-  
+  @State var mapViewService: MapViewService
   public init(mapService: MapViewService) {
     self.mapViewService = mapService
     

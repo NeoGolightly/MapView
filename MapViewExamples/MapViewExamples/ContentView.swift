@@ -6,19 +6,19 @@
 //
 
 import SwiftUI
-import MapView
-import MapKit
-import CoreLocation
-
-class TestViewModel: ObservableObject {
-  var mapService: MapViewService = MapViewService()
-}
 
 struct ContentView: View {
-  @StateObject private var viewModel = TestViewModel()
-  
+  @State private var showMap = false
+ 
   var body: some View {
-    MapView(mapService: viewModel.mapService)
+    Button("Show Map") {
+      showMap.toggle()
+    }
+    .fullScreenCover(isPresented: $showMap, content: {
+      NavigationView{
+        MapTestView()
+      }
+    })
   }
 }
 
@@ -27,3 +27,6 @@ struct ContentView_Previews: PreviewProvider {
     ContentView()
   }
 }
+
+
+

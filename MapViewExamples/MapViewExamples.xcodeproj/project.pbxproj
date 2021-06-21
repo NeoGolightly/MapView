@@ -8,15 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		B533ED84267CB9AB000313AB /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B533ED83267CB9AB000313AB /* MapKit.framework */; };
+		B55431FF2680B20200240E0D /* MapView in Frameworks */ = {isa = PBXBuildFile; productRef = B55431FE2680B20200240E0D /* MapView */; };
+		B55432012680B3E300240E0D /* MapTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55432002680B3E300240E0D /* MapTestView.swift */; };
 		B57C12C4267CAD0100088246 /* MapViewExamplesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57C12C3267CAD0100088246 /* MapViewExamplesApp.swift */; };
 		B57C12C6267CAD0100088246 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57C12C5267CAD0100088246 /* ContentView.swift */; };
 		B57C12C8267CAD0B00088246 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57C12C7267CAD0B00088246 /* Assets.xcassets */; };
 		B57C12CB267CAD0B00088246 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B57C12CA267CAD0B00088246 /* Preview Assets.xcassets */; };
-		B57C12D7267CAF4F00088246 /* MapView in Frameworks */ = {isa = PBXBuildFile; productRef = B57C12D6267CAF4F00088246 /* MapView */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		B533ED83267CB9AB000313AB /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		B55432002680B3E300240E0D /* MapTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTestView.swift; sourceTree = "<group>"; };
 		B57C12C0267CAD0100088246 /* MapViewExamples.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MapViewExamples.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B57C12C3267CAD0100088246 /* MapViewExamplesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewExamplesApp.swift; sourceTree = "<group>"; };
 		B57C12C5267CAD0100088246 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -30,8 +32,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B55431FF2680B20200240E0D /* MapView in Frameworks */,
 				B533ED84267CB9AB000313AB /* MapKit.framework in Frameworks */,
-				B57C12D7267CAF4F00088246 /* MapView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,6 +60,7 @@
 		B57C12C2267CAD0100088246 /* MapViewExamples */ = {
 			isa = PBXGroup;
 			children = (
+				B55432002680B3E300240E0D /* MapTestView.swift */,
 				B57C12C3267CAD0100088246 /* MapViewExamplesApp.swift */,
 				B57C12C5267CAD0100088246 /* ContentView.swift */,
 				B57C12C7267CAD0B00088246 /* Assets.xcassets */,
@@ -100,7 +103,7 @@
 			);
 			name = MapViewExamples;
 			packageProductDependencies = (
-				B57C12D6267CAF4F00088246 /* MapView */,
+				B55431FE2680B20200240E0D /* MapView */,
 			);
 			productName = MapViewExamples;
 			productReference = B57C12C0267CAD0100088246 /* MapViewExamples.app */;
@@ -157,6 +160,7 @@
 			files = (
 				B57C12C6267CAD0100088246 /* ContentView.swift in Sources */,
 				B57C12C4267CAD0100088246 /* MapViewExamplesApp.swift in Sources */,
+				B55432012680B3E300240E0D /* MapTestView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,7 +351,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		B57C12D6267CAF4F00088246 /* MapView */ = {
+		B55431FE2680B20200240E0D /* MapView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MapView;
 		};
