@@ -25,7 +25,7 @@ let package = Package(
       dependencies: [
         .product(name: "Logging", package: "swift-log")
       ],
-      exclude: ["../MapViewExamples"]),
+      exclude: ["MapViewExamples"]),
     .testTarget(
       name: "MapViewTests",
       dependencies: ["MapView"]),
