@@ -24,9 +24,20 @@ class TestViewModel: ObservableObject {
 
 struct MapTestView: View {
   @StateObject private var viewModel = TestViewModel()
-  
+  @Environment(\.presentationMode) var presentationMode
   var body: some View {
-    MapView(mapService: viewModel.mapService)
+    VStack {
+      MapView(mapService: viewModel.mapService)
+      Text("\(viewModel.mapService.coordinateRegion.center.latitude), \(viewModel.mapService.coordinateRegion.center.longitude)")
+    }
+    .navigationBarTitle("Map", displayMode: .inline)
+    .toolbar {
+      ToolbarItem(placement: ToolbarItemPlacement.cancellationAction) {
+        Button("Close") {
+          presentationMode.wrappedValue.dismiss()
+        }
+      }
+    }
   }
 }
 
