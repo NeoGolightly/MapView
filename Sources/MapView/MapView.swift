@@ -26,8 +26,7 @@ public struct MapView: UIViewRepresentable
   }
   
   public func makeUIView(context: Context) -> MKMapView {
-    let mapView = MKMapView(frame: UIScreen.main.bounds)
-    mapViewService.setMapView(mapView: mapView)
+    let mapView = mapViewService.mapView
     mapView.delegate = context.coordinator
     configureMapView(mapView: mapView)
     logger.trace("makeUIView")

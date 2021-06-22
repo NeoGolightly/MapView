@@ -66,7 +66,7 @@ public final class MapViewService: ObservableObject{
   internal var mapIsUpdating = false
   //
   private var lastCoordinateRegion: MKCoordinateRegion = MKCoordinateRegion()
-  public weak var mapView: MKMapView?
+  public  let mapView: MKMapView = MKMapView(frame: UIScreen.main.bounds)
   private var overlays: [MapViewOverlay] = []
   private var locationManager: CLLocationManager?
   private var tapGestureRecognizer: UITapGestureRecognizer
@@ -75,20 +75,24 @@ public final class MapViewService: ObservableObject{
   public init() {
     tapGestureRecognizer = UITapGestureRecognizer()
     setBindings()
+    tapGestureRecognizer.addTarget(self, action: #selector(self.handleTap(gr:)))
+    tapGestureRecognizer.numberOfTapsRequired = 1
+    tapGestureRecognizer.numberOfTouchesRequired = 1
+    mapView.addGestureRecognizer(tapGestureRecognizer)
   }
   
   deinit {
     print("deinit MapService")
     subscriptions.removeAll()
     subscriptions = []
-    mapView?.gestureRecognizers?.forEach{ mapView?.removeGestureRecognizer($0)}
+    mapView.gestureRecognizers?.forEach{ mapView.removeGestureRecognizer($0)}
   }
   
   @objc
   internal func handleTap(gr: UITapGestureRecognizer) {
     if gr.state == .ended {
       let point = gr.location(ofTouch: 0, in: mapView)
-      guard let mapView = mapView else { return }
+//      guard let mapView = mapView else { return }
       let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
       let mapPoint = MKMapPoint(coordinate)
       for overlay in mapView.overlays {
@@ -107,6 +111,29 @@ public final class MapViewService: ObservableObject{
     }
   }
   
+  public func calculateDegreeAngle(startCoordinate: CLLocationCoordinate2D,
+                                   centerCoordinate: CLLocationCoordinate2D,
+                                   destinationCoordinate: CLLocationCoordinate2D) -> Double {
+    let centerPoint = mapView.convert(centerCoordinate, toPointTo: mapView)
+    let startPoint = mapView.convert(startCoordinate, toPointTo: mapView)
+    let destinationPoint = mapView.convert(destinationCoordinate, toPointTo: mapView)
+    
+    let result = Self.angleBetweenThreePoints(center: centerPoint, firstPoint: startPoint, secondPoint: destinationPoint)
+    return Measurement(value: result, unit: UnitAngle.radians).converted(to: UnitAngle.degrees).value
+  }
+  
+  static func angleBetweenThreePoints(center: CGPoint, firstPoint: CGPoint, secondPoint: CGPoint) -> Double {
+    let firstAngle = atan2(firstPoint.y - center.y, firstPoint.x - center.x)
+    let secondAnlge = atan2(secondPoint.y - center.y, secondPoint.x - center.x)
+    var angleDiff = firstAngle - secondAnlge
+    
+    if angleDiff < 0 {
+      angleDiff *= -1
+    }
+    
+    return Double(angleDiff)
+  }
+  
   //TODO: Make delegate call and enum for auth type and completion callback
   public func requestAlwaysAuthorization(){
     locationManager = CLLocationManager()
@@ -114,7 +141,7 @@ public final class MapViewService: ObservableObject{
   }
   
   internal func setMapView(mapView: MKMapView){
-    self.mapView = mapView
+//    self.mapView = mapView
     tapGestureRecognizer.addTarget(self, action: #selector(self.handleTap(gr:)))
     tapGestureRecognizer.numberOfTapsRequired = 1
     tapGestureRecognizer.numberOfTouchesRequired = 1
@@ -122,8 +149,8 @@ public final class MapViewService: ObservableObject{
   }
   
   internal func removeMapView() {
-    self.mapView = nil
-    mapView?.gestureRecognizers?.forEach{ mapView?.removeGestureRecognizer($0)}
+//    self.mapView = nil
+//    mapView?.gestureRecognizers?.forEach{ mapView?.removeGestureRecognizer($0)}
   }
   
   public func setViewForAnnotation(callback: @escaping ViewForAnnotation){
@@ -156,77 +183,77 @@ public final class MapViewService: ObservableObject{
   
   private func setBindings() {
     _showsUserLocation.projectedValue.sink { [weak self] value in
-      self?.mapView?.showsUserLocation = value
+      self?.mapView.showsUserLocation = value
     }.store(in: &subscriptions)
     
     _userTrackingMode.projectedValue.sink { [weak self] value in
-      self?.mapView?.userTrackingMode = value
+      self?.mapView.userTrackingMode = value
     }.store(in: &subscriptions)
     
     _isPitchEnabled.projectedValue.sink { [weak self] value in
-      self?.mapView?.isPitchEnabled = value
+      self?.mapView.isPitchEnabled = value
     }.store(in: &subscriptions)
     
     _coordinateRegion.projectedValue.sink { [weak self] region in
       print("new region")
       guard self?.mapIsUpdating == false else { return }
       if region != self?.lastCoordinateRegion {
-        self?.mapView?.setRegion(region, animated: true)
+        self?.mapView.setRegion(region, animated: true)
         self?.lastCoordinateRegion = region
       }
     }.store(in: &subscriptions)
     
     _mapType.projectedValue.sink { [weak self] mapType in
-      self?.mapView?.mapType = mapType
+      self?.mapView.mapType = mapType
     }.store(in: &subscriptions)
   }
   
   public func addAnnotation(_ annotation: MapViewAnnotation) {
-    mapView?.addAnnotation(annotation)
+    mapView.addAnnotation(annotation)
   }
   
   public func removeAnnotation(id: String) {
-    guard let annotations = mapView?.annotations.compactMap({$0 as? MapViewAnnotation}),
-          let annotation = annotations.first(where: {$0.id == id})
+    let annotations = mapView.annotations.compactMap({$0 as? MapViewAnnotation})
+    guard let annotation = annotations.first(where: {$0.id == id})
     else { return }
-    mapView?.removeAnnotation(annotation)
+    mapView.removeAnnotation(annotation)
   }
   
   public func removeAnnotations(ids: [String]) {
-    guard let annotations = mapView?.annotations.compactMap({$0 as? MapViewAnnotation}) else { return }
+    let annotations = mapView.annotations.compactMap({$0 as? MapViewAnnotation})
     let filteredAnnotations = annotations.filter{ ids.contains($0.id) }
-    mapView?.removeAnnotations(filteredAnnotations)
+    mapView.removeAnnotations(filteredAnnotations)
   }
   
   public func removeAllAnnotations() {
-    guard let mapView = mapView else { return }
+    
     mapView.removeAnnotations(mapView.annotations)
   }
   
   public func addOverlay(_ overlay: MapViewOverlay) {
     overlays.append(overlay)
-    mapView?.addOverlay(overlay.overlay)
+    mapView.addOverlay(overlay.overlay)
   }
     
   public func addOverlays(_ overlays: [MapViewOverlay]) {
     self.overlays.append(contentsOf: overlays)
-    mapView?.addOverlays(overlays.map{$0.overlay})
+    mapView.addOverlays(overlays.map{$0.overlay})
   }
   
   public func removeOverlay(id: String) {
     guard let overlayIdx = overlays.firstIndex(where: {$0.id == id}) else { return }
     let overlay = overlays.remove(at: overlayIdx)
-    mapView?.removeOverlay(overlay.overlay)
+    mapView.removeOverlay(overlay.overlay)
   }
   
   public func removeOverlays(ids: [String]) {
     let toRemoveOverlays = overlays.filter({ ids.contains($0.id) })
     overlays.removeAll(where: { ids.contains($0.id) })
-    mapView?.removeOverlays(toRemoveOverlays.map{$0.overlay})
+    mapView.removeOverlays(toRemoveOverlays.map{$0.overlay})
   }
   
   public func removeAllOverlays() {
-    guard let mapView = mapView else { return }
+//    guard let mapView = mapView else { return }
     overlays.removeAll()
     mapView.removeOverlays(mapView.overlays)
   }
