@@ -66,7 +66,7 @@ public final class MapViewService: ObservableObject{
   internal var mapIsUpdating = false
   //
   private var lastCoordinateRegion: MKCoordinateRegion = MKCoordinateRegion()
-  private weak var mapView: MKMapView?
+  public weak var mapView: MKMapView?
   private var overlays: [MapViewOverlay] = []
   private var locationManager: CLLocationManager?
   private var tapGestureRecognizer: UITapGestureRecognizer
