@@ -195,7 +195,6 @@ public final class MapViewService: ObservableObject{
     }.store(in: &subscriptions)
     
     _coordinateRegion.projectedValue.sink { [weak self] region in
-      print("new region")
       guard self?.mapIsUpdating == false else { return }
       if region != self?.lastCoordinateRegion {
         self?.mapView.setRegion(region, animated: true)
