@@ -115,6 +115,7 @@ public final class MapViewService: ObservableObject{
                                    centerCoordinate: CLLocationCoordinate2D,
                                    destinationCoordinate: CLLocationCoordinate2D) -> Double {
     let centerPoint = mapView.convert(centerCoordinate, toPointTo: mapView)
+    print("centerPoint1: \(centerPoint)")
     let startPoint = mapView.convert(startCoordinate, toPointTo: mapView)
     let destinationPoint = mapView.convert(destinationCoordinate, toPointTo: mapView)
     
