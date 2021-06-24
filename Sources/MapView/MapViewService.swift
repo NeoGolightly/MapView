@@ -27,15 +27,30 @@ open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
   }
 }
 
-open class MapViewOverlay: Identifiable{
-  public let id: String
-  public var overlay: MKOverlay
-  public init(id: String = UUID().uuidString,
-              overlay: MKOverlay) {
+//open class MapViewOverlay: NSObject, MapViewOverlayType{
+//  public let id: String
+//  public var coordinate: CLLocationCoordinate2D
+//  public var boundingMapRect: MKMapRect
+//
+//  public init(id: String = UUID().uuidString) {
+//    self.id = id
+//
+//  }
+//}
+
+
+class MapViewPolyline: MKPolyline, MapViewOverlayType{
+  var id: String = UUID().uuidString
+  public convenience init(id: String = UUID().uuidString, coordinates: [CLLocationCoordinate2D]) {
+    self.init(coordinates: coordinates, count: coordinates.count)
     self.id = id
-    self.overlay = overlay
   }
 }
+
+public protocol MapViewOverlayType: MKOverlay{
+  var id: String { get }
+}
+
 
 public final class MapViewService: ObservableObject{
   //
@@ -67,7 +82,6 @@ public final class MapViewService: ObservableObject{
   //
   private var lastCoordinateRegion: MKCoordinateRegion = MKCoordinateRegion()
   public  let mapView: MKMapView = MKMapView(frame: UIScreen.main.bounds)
-  private var overlays: [MapViewOverlay] = []
   private var locationManager: CLLocationManager?
   private var tapGestureRecognizer: UITapGestureRecognizer
   private var subscriptions = Set<AnyCancellable>()
@@ -86,6 +100,8 @@ public final class MapViewService: ObservableObject{
     subscriptions.removeAll()
     subscriptions = []
     mapView.gestureRecognizers?.forEach{ mapView.removeGestureRecognizer($0)}
+    mapView.removeAnnotations(mapView.annotations)
+    mapView.removeOverlays(mapView.overlays)
   }
   
   @objc
@@ -226,35 +242,31 @@ public final class MapViewService: ObservableObject{
   }
   
   public func removeAllAnnotations() {
-    
     mapView.removeAnnotations(mapView.annotations)
   }
   
-  public func addOverlay(_ overlay: MapViewOverlay) {
-    overlays.append(overlay)
-    mapView.addOverlay(overlay.overlay)
+  public func addOverlay(_ overlay: MapViewOverlayType) {
+    mapView.addOverlay(overlay)
   }
     
-  public func addOverlays(_ overlays: [MapViewOverlay]) {
-    self.overlays.append(contentsOf: overlays)
-    mapView.addOverlays(overlays.map{$0.overlay})
+  public func addOverlays(_ overlays: [MapViewOverlayType]) {
+    mapView.addOverlays(overlays)
   }
   
   public func removeOverlay(id: String) {
-    guard let overlayIdx = overlays.firstIndex(where: {$0.id == id}) else { return }
-    let overlay = overlays.remove(at: overlayIdx)
-    mapView.removeOverlay(overlay.overlay)
+    guard let mapViewOverlays = mapView.overlays as? [MapViewOverlayType],
+          let overlayToRemove =  mapViewOverlays.first(where: {$0.id == id})
+    else { return }
+    mapView.removeOverlay(overlayToRemove)
   }
   
   public func removeOverlays(ids: [String]) {
-    let toRemoveOverlays = overlays.filter({ ids.contains($0.id) })
-    overlays.removeAll(where: { ids.contains($0.id) })
-    mapView.removeOverlays(toRemoveOverlays.map{$0.overlay})
+    guard let mapViewOverlays = mapView.overlays as? [MapViewOverlayType] else { return }
+    let overlaysToRemove =  mapViewOverlays.filter({ ids.contains($0.id) })
+    mapView.removeOverlays(overlaysToRemove)
   }
   
   public func removeAllOverlays() {
-//    guard let mapView = mapView else { return }
-    overlays.removeAll()
     mapView.removeOverlays(mapView.overlays)
   }
 }

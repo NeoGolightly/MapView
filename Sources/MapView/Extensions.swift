@@ -13,7 +13,6 @@ extension CLLocationCoordinate2D: Equatable {
   }
 }
 
-
 extension MKCoordinateRegion: Equatable
 {
   public static func == (lhs: MKCoordinateRegion, rhs: MKCoordinateRegion) -> Bool
@@ -27,16 +26,6 @@ extension MKCoordinateRegion: Equatable
       return false
     }
     return true
-  }
-}
-
-extension MKOverlay {
-  public func toMapViewOverlay() -> MapViewOverlay {
-    return MapViewOverlay(overlay: self)
-  }
-  
-  public func toMapViewOverlay(id: String) -> MapViewOverlay {
-    return MapViewOverlay(id: id, overlay: self)
   }
 }
 

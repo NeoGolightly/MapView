@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B533ED84267CB9AB000313AB /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B533ED83267CB9AB000313AB /* MapKit.framework */; };
-		B55431FF2680B20200240E0D /* MapView in Frameworks */ = {isa = PBXBuildFile; productRef = B55431FE2680B20200240E0D /* MapView */; };
+		B550342A26849B0200FF1DEE /* MapView in Frameworks */ = {isa = PBXBuildFile; productRef = B550342926849B0200FF1DEE /* MapView */; };
 		B55432012680B3E300240E0D /* MapTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55432002680B3E300240E0D /* MapTestView.swift */; };
 		B57C12C4267CAD0100088246 /* MapViewExamplesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57C12C3267CAD0100088246 /* MapViewExamplesApp.swift */; };
 		B57C12C6267CAD0100088246 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B57C12C5267CAD0100088246 /* ContentView.swift */; };
@@ -32,7 +32,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B55431FF2680B20200240E0D /* MapView in Frameworks */,
+				B550342A26849B0200FF1DEE /* MapView in Frameworks */,
 				B533ED84267CB9AB000313AB /* MapKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -103,7 +103,7 @@
 			);
 			name = MapViewExamples;
 			packageProductDependencies = (
-				B55431FE2680B20200240E0D /* MapView */,
+				B550342926849B0200FF1DEE /* MapView */,
 			);
 			productName = MapViewExamples;
 			productReference = B57C12C0267CAD0100088246 /* MapViewExamples.app */;
@@ -351,7 +351,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		B55431FE2680B20200240E0D /* MapView */ = {
+		B550342926849B0200FF1DEE /* MapView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MapView;
 		};
