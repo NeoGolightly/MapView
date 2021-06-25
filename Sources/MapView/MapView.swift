@@ -11,23 +11,37 @@ import Logging
 //  }
 //}
 
+struct MapViewServiceEnvironmentKey: EnvironmentKey {
+    static var defaultValue: MapViewService = .init()
+}
+
+extension EnvironmentValues {
+    var mapViewService: MapViewService {
+        get { self[MapViewServiceEnvironmentKey.self] }
+//        set { self[ChartStyleEnvironmentKey.self] = newValue }
+    }
+}
+
+
 var logger = Logger(label: "MapView")
 
 public struct MapView: UIViewRepresentable
 {
+  
   public typealias UIViewType = MKMapView
+  
   //FIXME: mapService not deinit
   @State var mapViewService: MapViewService
   public init(mapService: MapViewService) {
     self.mapViewService = mapService
-    
     logger.logLevel = .trace
     logger.trace("init")
   }
   
   public func makeUIView(context: Context) -> MKMapView {
     let mapView = mapViewService.mapView
-    mapView.delegate = context.coordinator
+//    mapView.delegate = context.coordinator
+    
     configureMapView(mapView: mapView)
     logger.trace("makeUIView")
     return mapView
@@ -45,7 +59,7 @@ public struct MapView: UIViewRepresentable
     }
   }
   
-  public static func dismantleUIView(_ view: MKMapView, coordinator: MapViewCoodinator) {
+  public static func dismantleUIView(_ view: MKMapView, coordinator: Void) {
     view.removeAnnotations(view.annotations)
     view.removeOverlays(view.overlays)
     view.delegate = nil
@@ -55,11 +69,6 @@ public struct MapView: UIViewRepresentable
   
   public func updateUIView(_ mapView: MKMapView, context: Context) {
     
-  }
-  
-  public func makeCoordinator() -> MapViewCoodinator {
-    logger.trace("makeCoordinator")
-    return MapViewCoodinator(self)
   }
   
   
@@ -92,7 +101,10 @@ public struct MapView: UIViewRepresentable
     }
     
     public func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-      parent.mapViewService.mapViewRendererForOverlay?(mapView, overlay) ?? MKOverlayRenderer()
+      print("overlay: \(overlay)")
+      guard let overlay = overlay as? MapViewOverlay else { return MKOverlayRenderer() }
+      
+      return parent.mapViewService.mapViewRendererForOverlay?(mapView, overlay) ?? MKOverlayRenderer()
     }
     
     public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {

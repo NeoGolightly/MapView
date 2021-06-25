@@ -27,36 +27,33 @@ open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
   }
 }
 
-//open class MapViewOverlay: NSObject, MapViewOverlayType{
-//  public let id: String
-//  public var coordinate: CLLocationCoordinate2D
-//  public var boundingMapRect: MKMapRect
-//
-//  public init(id: String = UUID().uuidString) {
-//    self.id = id
-//
-//  }
-//}
-
-
-class MapViewPolyline: MKPolyline, MapViewOverlayType{
-  var id: String = UUID().uuidString
-  public convenience init(id: String = UUID().uuidString, coordinates: [CLLocationCoordinate2D]) {
+final public class MapViewPolyline: MKPolyline, MapViewOverlay{
+  public internal(set) var id: String = UUID().uuidString
+  public internal(set) var isSelectable: Bool = false
+  public convenience init(id: String = UUID().uuidString,
+                          coordinates: [CLLocationCoordinate2D],
+                          isSelectable: Bool = false) {
     self.init(coordinates: coordinates, count: coordinates.count)
     self.id = id
+    self.isSelectable = isSelectable
   }
+  
+  
 }
 
-public protocol MapViewOverlayType: MKOverlay{
+public protocol MapViewOverlay: MKOverlay{
   var id: String { get }
+  var isSelectable: Bool { get }
 }
 
 
-public final class MapViewService: ObservableObject{
+public final class MapViewService: NSObject, ObservableObject{
+  //
+  public let mapView: MKMapView = MKMapView(frame: UIScreen.main.bounds)
   //
   public typealias ViewForAnnotation = (MKMapView, MKAnnotation) -> MKAnnotationView?
   public typealias ViewDidChangeVisibleRegion = (MKMapView) -> ()
-  public typealias RendererForOverlay = (MKMapView, MKOverlay) -> MKOverlayRenderer
+  public typealias RendererForOverlay = (MKMapView, MapViewOverlay) -> MKOverlayRenderer
   public typealias DidSelectView = (MKMapView, MKAnnotationView) -> ()
   public typealias DidDeselectView = (MKMapView, MKAnnotationView) -> ()
   public typealias DidSelectPolyline = (MKMapView, MKPolylineRenderer) -> ()
@@ -81,13 +78,16 @@ public final class MapViewService: ObservableObject{
   internal var mapIsUpdating = false
   //
   private var lastCoordinateRegion: MKCoordinateRegion = MKCoordinateRegion()
-  public  let mapView: MKMapView = MKMapView(frame: UIScreen.main.bounds)
   private var locationManager: CLLocationManager?
   private var tapGestureRecognizer: UITapGestureRecognizer
+  private(set) var selectableOverlays: [String: MapViewOverlay] = [:]
   private var subscriptions = Set<AnyCancellable>()
   
-  public init() {
+  
+  public override init() {
     tapGestureRecognizer = UITapGestureRecognizer()
+    super.init()
+    mapView.delegate = self
     setBindings()
     tapGestureRecognizer.addTarget(self, action: #selector(self.handleTap(gr:)))
     tapGestureRecognizer.numberOfTapsRequired = 1
@@ -104,6 +104,9 @@ public final class MapViewService: ObservableObject{
     mapView.removeOverlays(mapView.overlays)
   }
   
+  
+  //FIXME: Better: use mapView.visibleMapRect.contains(MKMapRect) to check for overlay in "visibleRect"
+  //FIXME: Save all overlays with isSelectable = true in Dictionary to faster iterate (an to not use mapView.overlays)
   @objc
   internal func handleTap(gr: UITapGestureRecognizer) {
     if gr.state == .ended {
@@ -112,6 +115,7 @@ public final class MapViewService: ObservableObject{
       let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
       let mapPoint = MKMapPoint(coordinate)
       for overlay in mapView.overlays {
+        
         if overlay is MKPolyline {
           if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
             let polylineViewPoint = renderer.point(for: mapPoint)
@@ -245,28 +249,84 @@ public final class MapViewService: ObservableObject{
     mapView.removeAnnotations(mapView.annotations)
   }
   
-  public func addOverlay(_ overlay: MapViewOverlayType) {
+  public func addOverlay(_ overlay: MapViewOverlay) {
+    if overlay.isSelectable {selectableOverlays[overlay.id] = overlay }
     mapView.addOverlay(overlay)
   }
     
-  public func addOverlays(_ overlays: [MapViewOverlayType]) {
+  public func addOverlays(_ overlays: [MapViewOverlay]) {
+    overlays
+      .lazy
+      .filter{$0.isSelectable}
+      .forEach{ self.selectableOverlays[$0.id] = $0 }
     mapView.addOverlays(overlays)
   }
   
   public func removeOverlay(id: String) {
-    guard let mapViewOverlays = mapView.overlays as? [MapViewOverlayType],
+    guard let mapViewOverlays = mapView.overlays as? [MapViewOverlay],
           let overlayToRemove =  mapViewOverlays.first(where: {$0.id == id})
     else { return }
+    if overlayToRemove.isSelectable { selectableOverlays.removeValue(forKey: overlayToRemove.id) }
     mapView.removeOverlay(overlayToRemove)
   }
   
   public func removeOverlays(ids: [String]) {
-    guard let mapViewOverlays = mapView.overlays as? [MapViewOverlayType] else { return }
-    let overlaysToRemove =  mapViewOverlays.filter({ ids.contains($0.id) })
+    guard let mapViewOverlays = mapView.overlays as? [MapViewOverlay] else { return }
+    let overlaysToRemove = mapViewOverlays.filter({ ids.contains($0.id) })
+    overlaysToRemove
+      .lazy
+      .filter{$0.isSelectable}
+      .forEach{ self.selectableOverlays.removeValue(forKey: $0.id) }
     mapView.removeOverlays(overlaysToRemove)
   }
   
   public func removeAllOverlays() {
+    selectableOverlays.removeAll()
     mapView.removeOverlays(mapView.overlays)
+  }
+}
+
+extension MapViewService:  MKMapViewDelegate {
+  public func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+    heading = mapView.camera.heading
+    coordinateRegion = mapView.region
+    centerAltitude = mapView.camera.altitude
+    mapViewDidChangeVisibleRegion?(mapView)
+  }
+  
+  
+  public func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool){
+    mapIsUpdating = true
+  }
+  
+  
+  public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool){
+    mapIsUpdating = false
+  }
+  
+  public func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+    mapViewDidUpdateUserLocation?(mapView, userLocation)
+  }
+  
+  public func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+    guard let overlay = overlay as? MapViewOverlay else { fatalError("overlay is not type of MapViewOverlay") }
+    return mapViewRendererForOverlay?(mapView, overlay) ?? MKOverlayRenderer()
+  }
+  
+  public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+    mapViewViewForAnnotation?(mapView, annotation)
+  }
+  
+  public func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+    mapViewDidSelectView?(mapView, view)
+  }
+  
+  public func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
+    mapViewDidDeselectView?(mapView, view)
+  }
+  
+  public func mapView(_ mapView: MKMapView, didAdd views: [MKAnnotationView]) {
+//      let view = mapView.view(for: mapView.userLocation)
+//      view?.isEnabled = false
   }
 }
