@@ -23,7 +23,11 @@ extension EnvironmentValues {
 }
 
 
-var logger = Logger(label: "MapView")
+var logger: Logger {
+  var logger = Logger(label: "MapView")
+  logger.logLevel = .trace
+  return logger
+}
 
 public struct MapView: UIViewRepresentable
 {
@@ -31,17 +35,14 @@ public struct MapView: UIViewRepresentable
   public typealias UIViewType = MKMapView
   
   //FIXME: mapService not deinit
-  @State var mapViewService: MapViewService
+  @State private var mapViewService: MapViewService
   public init(mapService: MapViewService) {
     self.mapViewService = mapService
-    logger.logLevel = .trace
-    logger.trace("init")
+    logger.trace("init MapView")
   }
   
   public func makeUIView(context: Context) -> MKMapView {
     let mapView = mapViewService.mapView
-//    mapView.delegate = context.coordinator
-    
     configureMapView(mapView: mapView)
     logger.trace("makeUIView")
     return mapView
@@ -58,71 +59,8 @@ public struct MapView: UIViewRepresentable
       mapView.addSubview(userButton)
     }
   }
-  
-  public static func dismantleUIView(_ view: MKMapView, coordinator: Void) {
-    view.removeAnnotations(view.annotations)
-    view.removeOverlays(view.overlays)
-    view.delegate = nil
-    logger.trace("dismantle")
-  }
-  
-  
+    
   public func updateUIView(_ mapView: MKMapView, context: Context) {
-    
+    logger.trace("update MapView")
   }
-  
-  
-  public class MapViewCoodinator: NSObject, MKMapViewDelegate  {
-    let parent: MapView
-    
-    init(_ parent: MapView) {
-      self.parent = parent
-    }
-    
-    public func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
-      parent.mapViewService.heading = mapView.camera.heading
-      parent.mapViewService.coordinateRegion = mapView.region
-      parent.mapViewService.centerAltitude = mapView.camera.altitude
-      parent.mapViewService.mapViewDidChangeVisibleRegion?(mapView)
-    }
-    
-    
-    public func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool){
-      parent.mapViewService.mapIsUpdating = true
-    }
-    
-    
-    public func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool){
-      parent.mapViewService.mapIsUpdating = false
-    }
-    
-    public func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-      parent.mapViewService.mapViewDidUpdateUserLocation?(mapView, userLocation)
-    }
-    
-    public func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-      print("overlay: \(overlay)")
-      guard let overlay = overlay as? MapViewOverlay else { return MKOverlayRenderer() }
-      
-      return parent.mapViewService.mapViewRendererForOverlay?(mapView, overlay) ?? MKOverlayRenderer()
-    }
-    
-    public func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-      parent.mapViewService.mapViewViewForAnnotation?(mapView, annotation)
-    }
-    
-    public func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-      parent.mapViewService.mapViewDidSelectView?(mapView, view)
-    }
-    
-    public func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
-      parent.mapViewService.mapViewDidDeselectView?(mapView, view)
-    }
-    
-    public func mapView(_ mapView: MKMapView, didAdd views: [MKAnnotationView]) {
-//      let view = mapView.view(for: mapView.userLocation)
-//      view?.isEnabled = false
-    }
-  }
-  
 }

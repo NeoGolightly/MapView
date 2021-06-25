@@ -9,6 +9,7 @@ import MapKit
 import Combine
 import CoreLocation
 import Logging
+import SwiftUI
 
 
 open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
@@ -85,6 +86,7 @@ public final class MapViewService: NSObject, ObservableObject{
   
   
   public override init() {
+    logger.trace("init MapViewService")
     tapGestureRecognizer = UITapGestureRecognizer()
     super.init()
     mapView.delegate = self
@@ -93,66 +95,17 @@ public final class MapViewService: NSObject, ObservableObject{
     tapGestureRecognizer.numberOfTapsRequired = 1
     tapGestureRecognizer.numberOfTouchesRequired = 1
     mapView.addGestureRecognizer(tapGestureRecognizer)
+    
   }
   
   deinit {
-    print("deinit MapService")
+    logger.debug("deinit MapService")
     subscriptions.removeAll()
     subscriptions = []
     mapView.gestureRecognizers?.forEach{ mapView.removeGestureRecognizer($0)}
     mapView.removeAnnotations(mapView.annotations)
     mapView.removeOverlays(mapView.overlays)
-  }
-  
-  
-  //FIXME: Better: use mapView.visibleMapRect.contains(MKMapRect) to check for overlay in "visibleRect"
-  //FIXME: Save all overlays with isSelectable = true in Dictionary to faster iterate (an to not use mapView.overlays)
-  @objc
-  internal func handleTap(gr: UITapGestureRecognizer) {
-    if gr.state == .ended {
-      let point = gr.location(ofTouch: 0, in: mapView)
-//      guard let mapView = mapView else { return }
-      let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
-      let mapPoint = MKMapPoint(coordinate)
-      for overlay in mapView.overlays {
-        
-        if overlay is MKPolyline {
-          if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
-            let polylineViewPoint = renderer.point(for: mapPoint)
-            if renderer.path.boundingBoxOfPath.contains(polylineViewPoint){
-              mapViewDidSelectPolyline?(mapView, renderer)
-            }
-            else {
-              mapViewDidDeselectPolyline?(mapView, renderer)
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  public func calculateDegreeAngle(startCoordinate: CLLocationCoordinate2D,
-                                   centerCoordinate: CLLocationCoordinate2D,
-                                   destinationCoordinate: CLLocationCoordinate2D) -> Double {
-    let centerPoint = mapView.convert(centerCoordinate, toPointTo: mapView)
-    print("centerPoint1: \(centerPoint)")
-    let startPoint = mapView.convert(startCoordinate, toPointTo: mapView)
-    let destinationPoint = mapView.convert(destinationCoordinate, toPointTo: mapView)
-    
-    let result = Self.angleBetweenThreePoints(center: centerPoint, firstPoint: startPoint, secondPoint: destinationPoint)
-    return Measurement(value: result, unit: UnitAngle.radians).converted(to: UnitAngle.degrees).value
-  }
-  
-  static func angleBetweenThreePoints(center: CGPoint, firstPoint: CGPoint, secondPoint: CGPoint) -> Double {
-    let firstAngle = atan2(firstPoint.y - center.y, firstPoint.x - center.x)
-    let secondAnlge = atan2(secondPoint.y - center.y, secondPoint.x - center.x)
-    var angleDiff = firstAngle - secondAnlge
-    
-    if angleDiff < 0 {
-      angleDiff *= -1
-    }
-    
-    return Double(angleDiff)
+    mapView.delegate = nil
   }
   
   //TODO: Make delegate call and enum for auth type and completion callback
@@ -162,44 +115,10 @@ public final class MapViewService: NSObject, ObservableObject{
   }
   
   internal func setMapView(mapView: MKMapView){
-//    self.mapView = mapView
     tapGestureRecognizer.addTarget(self, action: #selector(self.handleTap(gr:)))
     tapGestureRecognizer.numberOfTapsRequired = 1
     tapGestureRecognizer.numberOfTouchesRequired = 1
     mapView.addGestureRecognizer(tapGestureRecognizer)
-  }
-  
-  internal func removeMapView() {
-//    self.mapView = nil
-//    mapView?.gestureRecognizers?.forEach{ mapView?.removeGestureRecognizer($0)}
-  }
-  
-  public func setViewForAnnotation(callback: @escaping ViewForAnnotation){
-    mapViewViewForAnnotation = callback
-  }
-  
-  public func mapViewDidChangeVisibleRegion(callback: @escaping ViewDidChangeVisibleRegion) {
-    mapViewDidChangeVisibleRegion = callback
-  }
-  
-  public func mapViewRendererForOverlay(callback: @escaping RendererForOverlay) {
-    mapViewRendererForOverlay = callback
-  }
-  
-  public func mapViewDidSelectView(callback: @escaping DidSelectView) {
-    mapViewDidSelectView = callback
-  }
-  
-  public func mapViewDidDeselectView(callback: @escaping DidDeselectView) {
-    mapViewDidDeselectView = callback
-  }
-  
-  public func mapViewDidSelectPolyline(callback: @escaping DidSelectPolyline) {
-    mapViewDidSelectPolyline = callback
-  }
-  
-  public func mapViewDidDeselectPolyline(callback: @escaping DidDeselectPolyline) {
-    mapViewDidDeselectPolyline = callback
   }
   
   private func setBindings() {
@@ -227,7 +146,70 @@ public final class MapViewService: NSObject, ObservableObject{
       self?.mapView.mapType = mapType
     }.store(in: &subscriptions)
   }
+}
+
+//MARK: Handle Touch
+extension MapViewService {
+  //FIXME: Better: use mapView.visibleMapRect.contains(MKMapRect) to check for overlay in "visibleRect"
+  //FIXME: Save all overlays with isSelectable = true in Dictionary to faster iterate (an to not use mapView.overlays)
+  @objc
+  internal func handleTap(gr: UITapGestureRecognizer) {
+    if gr.state == .ended {
+      let point = gr.location(ofTouch: 0, in: mapView)
+//      guard let mapView = mapView else { return }
+      let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
+      let mapPoint = MKMapPoint(coordinate)
+      for overlay in mapView.overlays {
+        
+        if overlay is MKPolyline {
+          if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
+            let polylineViewPoint = renderer.point(for: mapPoint)
+            if renderer.path.boundingBoxOfPath.contains(polylineViewPoint){
+              mapViewDidSelectPolyline?(mapView, renderer)
+            }
+            else {
+              mapViewDidDeselectPolyline?(mapView, renderer)
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+//MARK: Delegate Callbacks
+extension MapViewService {
+  public func setViewForAnnotation(callback: @escaping ViewForAnnotation){
+    mapViewViewForAnnotation = callback
+  }
   
+  public func mapViewDidChangeVisibleRegion(callback: @escaping ViewDidChangeVisibleRegion) {
+    mapViewDidChangeVisibleRegion = callback
+  }
+  
+  public func mapViewRendererForOverlay(callback: @escaping RendererForOverlay) {
+    mapViewRendererForOverlay = callback
+  }
+  
+  public func mapViewDidSelectView(callback: @escaping DidSelectView) {
+    mapViewDidSelectView = callback
+  }
+  
+  public func mapViewDidDeselectView(callback: @escaping DidDeselectView) {
+    mapViewDidDeselectView = callback
+  }
+  
+  public func mapViewDidSelectPolyline(callback: @escaping DidSelectPolyline) {
+    mapViewDidSelectPolyline = callback
+  }
+  
+  public func mapViewDidDeselectPolyline(callback: @escaping DidDeselectPolyline) {
+    mapViewDidDeselectPolyline = callback
+  }
+}
+
+//MARK: Annotations
+extension MapViewService {
   public func addAnnotation(_ annotation: MapViewAnnotation) {
     mapView.addAnnotation(annotation)
   }
@@ -248,7 +230,10 @@ public final class MapViewService: NSObject, ObservableObject{
   public func removeAllAnnotations() {
     mapView.removeAnnotations(mapView.annotations)
   }
-  
+}
+
+//MARK: Overlays
+extension MapViewService {
   public func addOverlay(_ overlay: MapViewOverlay) {
     if overlay.isSelectable {selectableOverlays[overlay.id] = overlay }
     mapView.addOverlay(overlay)
@@ -286,6 +271,8 @@ public final class MapViewService: NSObject, ObservableObject{
   }
 }
 
+
+//MARK: Delegate
 extension MapViewService:  MKMapViewDelegate {
   public func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
     heading = mapView.camera.heading
@@ -328,5 +315,33 @@ extension MapViewService:  MKMapViewDelegate {
   public func mapView(_ mapView: MKMapView, didAdd views: [MKAnnotationView]) {
 //      let view = mapView.view(for: mapView.userLocation)
 //      view?.isEnabled = false
+  }
+}
+
+
+//MARK: Helper
+extension MapViewService {
+  public func calculateDegreeAngle(startCoordinate: CLLocationCoordinate2D,
+                                   centerCoordinate: CLLocationCoordinate2D,
+                                   destinationCoordinate: CLLocationCoordinate2D) -> Double {
+    let centerPoint = mapView.convert(centerCoordinate, toPointTo: mapView)
+    print("centerPoint1: \(centerPoint)")
+    let startPoint = mapView.convert(startCoordinate, toPointTo: mapView)
+    let destinationPoint = mapView.convert(destinationCoordinate, toPointTo: mapView)
+    
+    let result = Self.angleBetweenThreePoints(center: centerPoint, firstPoint: startPoint, secondPoint: destinationPoint)
+    return Measurement(value: result, unit: UnitAngle.radians).converted(to: UnitAngle.degrees).value
+  }
+  
+  static func angleBetweenThreePoints(center: CGPoint, firstPoint: CGPoint, secondPoint: CGPoint) -> Double {
+    let firstAngle = atan2(firstPoint.y - center.y, firstPoint.x - center.x)
+    let secondAnlge = atan2(secondPoint.y - center.y, secondPoint.x - center.x)
+    var angleDiff = firstAngle - secondAnlge
+    
+    if angleDiff < 0 {
+      angleDiff *= -1
+    }
+    
+    return Double(angleDiff)
   }
 }
