@@ -8,35 +8,39 @@
 import MapKit
 
 
-extension CLLocationCoordinate2D: Equatable {
-  public static func ==(lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
-    return lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
-  }
-}
-
-extension MKCoordinateRegion: Equatable
+//MARK: Hashable
+extension MKCoordinateRegion: Hashable
 {
   public static func == (lhs: MKCoordinateRegion, rhs: MKCoordinateRegion) -> Bool
   {
-    if lhs.center.latitude != rhs.center.latitude || lhs.center.longitude != rhs.center.longitude
-    {
-      return false
-    }
-    if lhs.span.latitudeDelta != rhs.span.latitudeDelta || lhs.span.longitudeDelta != rhs.span.longitudeDelta
-    {
-      return false
-    }
-    return true
+    return lhs.center == rhs.center && lhs.span == rhs.span
+  }
+  
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(center)
+    hasher.combine(span)
   }
 }
 
-public extension MKMultiPoint {
-    var coordinates: [CLLocationCoordinate2D] {
-        var coords = [CLLocationCoordinate2D](repeating: kCLLocationCoordinate2DInvalid,
-                                              count: pointCount)
-
-        getCoordinates(&coords, range: NSRange(location: 0, length: pointCount))
-
-        return coords
-    }
+extension CLLocationCoordinate2D: Hashable {
+  public static func ==(lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
+    return lhs.latitude == rhs.latitude && lhs.longitude == rhs.longitude
+  }
+  
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(latitude)
+    hasher.combine(longitude)
+  }
 }
+
+extension MKCoordinateSpan: Hashable {
+  public static func == (lhs: MKCoordinateSpan, rhs: MKCoordinateSpan) -> Bool {
+    return lhs.latitudeDelta == rhs.latitudeDelta && lhs.longitudeDelta == rhs.longitudeDelta
+  }
+  
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(latitudeDelta)
+    hasher.combine(longitudeDelta)
+  }
+}
+

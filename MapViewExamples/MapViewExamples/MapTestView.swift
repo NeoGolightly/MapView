@@ -21,7 +21,7 @@ class TestViewModel: ObservableObject {
     mapService.showsUserLocation = true
 //    mapService.userTrackingMode = .followWithHeading
     DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-      self.mapService.coordinateRegion = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.802579821250846,
+      self.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.802579821250846,
                                                                                       longitude: 10.42653534194526),
                                                        span: MKCoordinateSpan(latitudeDelta: 0.01,
                                                                               longitudeDelta: 0.01))

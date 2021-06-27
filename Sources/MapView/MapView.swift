@@ -32,13 +32,13 @@ var logger: Logger {
 public struct MapView: UIViewRepresentable
 {
   
-  public typealias UIViewType = MKMapView
-  
   //FIXME: mapService not deinit
-  @State private var mapViewService: MapViewService
+  @State private var mapViewService: MapViewService = MapViewService()
+  
   public init(mapService: MapViewService) {
     self.mapViewService = mapService
     logger.trace("init MapView")
+
   }
   
   public func makeUIView(context: Context) -> MKMapView {
@@ -46,6 +46,10 @@ public struct MapView: UIViewRepresentable
     configureMapView(mapView: mapView)
     logger.trace("makeUIView")
     return mapView
+  }
+  
+  private func regionChanged(to value: MKCoordinateRegion) {
+    logger.debug("region changed")
   }
   
   private func configureMapView(mapView: MKMapView){
@@ -62,5 +66,6 @@ public struct MapView: UIViewRepresentable
     
   public func updateUIView(_ mapView: MKMapView, context: Context) {
     logger.trace("update MapView")
+//    mapViewService.mapView.setRegion(region, animated: true)
   }
 }

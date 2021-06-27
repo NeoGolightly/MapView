@@ -150,6 +150,14 @@ public final class MapViewService: NSObject, ObservableObject{
 
 //MARK: Handle Touch
 extension MapViewService {
+  
+//  @objc func didTapOnMap(sender: UITapGestureRecognizer) {
+//              let tapLocation = sender.location(in: mapView.map)
+//              let coordinate = mapView.map.convert(tapLocation, toCoordinateFrom: mapView.map)
+//              
+//              selectedCoord = coordinate
+//              getForecast()
+//          }
   //FIXME: Better: use mapView.visibleMapRect.contains(MKMapRect) to check for overlay in "visibleRect"
   //FIXME: Save all overlays with isSelectable = true in Dictionary to faster iterate (an to not use mapView.overlays)
   @objc
@@ -164,7 +172,7 @@ extension MapViewService {
         if overlay is MKPolyline {
           if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
             let polylineViewPoint = renderer.point(for: mapPoint)
-            if renderer.path.boundingBoxOfPath.contains(polylineViewPoint){
+            if renderer.path.contains(polylineViewPoint){
               mapViewDidSelectPolyline?(mapView, renderer)
             }
             else {
