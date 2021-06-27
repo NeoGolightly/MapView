@@ -12,11 +12,11 @@ import Logging
 //}
 
 public struct MapViewServiceEnvironmentKey: EnvironmentKey {
-    static var defaultValue: MapViewService = .init()
+  public static var defaultValue: MapViewService = .init()
 }
 
 public extension EnvironmentValues {
-    var mapViewService: MapViewService {
+  var mapViewService: MapViewService {
         get { self[MapViewServiceEnvironmentKey.self] }
 //        set { self[ChartStyleEnvironmentKey.self] = newValue }
     }
