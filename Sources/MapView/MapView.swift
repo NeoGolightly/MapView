@@ -33,10 +33,10 @@ public struct MapView: UIViewRepresentable
 {
   
   //FIXME: mapService not deinit
-  @StateObject public var mapViewService: MapViewService
+  @State public var mapViewService: MapViewService
   
-  public init(mapService: StateObject<MapViewService>) {
-    self._mapViewService = mapService
+  public init(mapService: MapViewService) {
+    self.mapViewService = mapService
     logger.trace("init MapView")
   }
   
