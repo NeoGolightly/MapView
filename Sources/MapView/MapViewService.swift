@@ -167,7 +167,7 @@ extension MapViewService {
 //      guard let mapView = mapView else { return }
       let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
       let mapPoint = MKMapPoint(coordinate)
-      for overlay in mapView.overlays {
+      for overlay in selectableOverlays.values {
         
         if overlay is MKPolyline {
           if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
@@ -333,7 +333,6 @@ extension MapViewService {
                                    centerCoordinate: CLLocationCoordinate2D,
                                    destinationCoordinate: CLLocationCoordinate2D) -> Double {
     let centerPoint = mapView.convert(centerCoordinate, toPointTo: mapView)
-    print("centerPoint1: \(centerPoint)")
     let startPoint = mapView.convert(startCoordinate, toPointTo: mapView)
     let destinationPoint = mapView.convert(destinationCoordinate, toPointTo: mapView)
     
