@@ -222,6 +222,10 @@ extension MapViewService {
     mapView.addAnnotation(annotation)
   }
   
+  public func addAnnotations(_ annotations: [MapViewAnnotation]) {
+    mapView.addAnnotations(annotations)
+  }
+  
   public func removeAnnotation(id: String) {
     let annotations = mapView.annotations.compactMap({$0 as? MapViewAnnotation})
     guard let annotation = annotations.first(where: {$0.id == id})
