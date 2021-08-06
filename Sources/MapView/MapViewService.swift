@@ -28,7 +28,7 @@ open class MapViewAnnotation: NSObject, MKAnnotation, Identifiable{
   }
 }
 
-final public class MapViewPolyline: MKPolyline, MapViewOverlay{
+open class MapViewPolyline: MKPolyline, MapViewOverlay{
   public internal(set) var id: String = UUID().uuidString
   public internal(set) var isSelectable: Bool = false
   public convenience init(id: String = UUID().uuidString,
@@ -45,6 +45,35 @@ final public class MapViewPolyline: MKPolyline, MapViewOverlay{
 public protocol MapViewOverlay: MKOverlay{
   var id: String { get }
   var isSelectable: Bool { get }
+}
+
+public enum MapViewMapType: UInt, CaseIterable {
+  case standard = 0
+  case satellite = 1
+  case hybrid = 2
+  
+  internal func toMKMapType() -> MKMapType {
+    switch self {
+    case .standard:
+      return MKMapType.standard
+    case .satellite:
+      return MKMapType.satellite
+    case .hybrid:
+      return MKMapType.hybrid
+    }
+  }
+  
+  public func name() -> String {
+    switch self {
+    case .standard:
+      return "Standard"
+    case .satellite:
+      return "Satellite"
+    case .hybrid:
+      return "Hybrid"
+    }
+  }
+  
 }
 
 
@@ -66,7 +95,7 @@ public final class MapViewService: NSObject, ObservableObject{
   @Published public var heading: CLLocationDirection = 0
   @Published public var centerAltitude: CLLocationDistance = 0
   @Published public var coordinateRegion: MKCoordinateRegion = MKCoordinateRegion()
-  @Published public var mapType: MKMapType = MKMapType.standard
+  @Published public var mapType: MapViewMapType = .standard
   //
   internal var mapViewDidChangeVisibleRegion: ViewDidChangeVisibleRegion?
   internal var mapViewDidUpdateUserLocation: ((MKMapView,MKUserLocation) -> ())?
@@ -143,7 +172,7 @@ public final class MapViewService: NSObject, ObservableObject{
     }.store(in: &subscriptions)
     
     _mapType.projectedValue.sink { [weak self] mapType in
-      self?.mapView.mapType = mapType
+      self?.mapView.mapType = mapType.toMKMapType()
     }.store(in: &subscriptions)
   }
 }
@@ -164,15 +193,17 @@ extension MapViewService {
   internal func handleTap(gr: UITapGestureRecognizer) {
     if gr.state == .ended {
       let point = gr.location(ofTouch: 0, in: mapView)
-//      guard let mapView = mapView else { return }
       let coordinate = mapView.convert(point, toCoordinateFrom: mapView)
       let mapPoint = MKMapPoint(coordinate)
+      
       for overlay in selectableOverlays.values {
         
         if overlay is MKPolyline {
+          
           if let renderer = mapView.renderer(for: overlay) as? MKPolylineRenderer{
+            
             let polylineViewPoint = renderer.point(for: mapPoint)
-            if renderer.path.contains(polylineViewPoint){
+            if renderer.path.boundingBoxOfPath.contains(polylineViewPoint){
               mapViewDidSelectPolyline?(mapView, renderer)
             }
             else {
